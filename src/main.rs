@@ -1,24 +1,23 @@
-use std::io::Read;
+mod types;
 
-use hyper::{body::{HttpBody, Buf}, Client, Method, Request, Body};
+use std::io::Read;
+use hyper::{body::Buf, Body, Client, Method, Request};
+
+use crate::types::get_power_body;
 
 #[derive(Debug)]
-enum WemoError {
-}
-
-const INSIGHT_BODY: &str = "<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">
-    <s:Body>
-        <u:GetInsightParams xmlns:u=\"urn:Belkin:service:insight:1\"></u:GetInsightParams>
-    </s:Body>
-</s:Envelope>";
+enum WemoError {}
 
 async fn query_power_draw() -> Result<(), WemoError> {
     let request_power = Request::builder()
         .method(Method::POST)
         .uri("http://10.1.229.62:49153/upnp/control/insight1")
-        .header("SOAPACTION", "\"urn:Belkin:service:insight:1#GetInsightParams\"")
+        .header(
+            "SOAPACTION",
+            "\"urn:Belkin:service:insight:1#GetInsightParams\"",
+        )
         .header("Content-Type", "text/xml")
-        .body(Body::from(INSIGHT_BODY))
+        .body(Body::from(get_power_body()))
         .expect("Build");
 
     let client = Client::new();
