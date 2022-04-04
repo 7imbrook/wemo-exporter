@@ -1,5 +1,5 @@
 {
   "Datacenter": "home",
-  "Node": "google",
-  "ServiceID": "search1"
+  "Node": "local-mac",
+  "ServiceID": "local-mbp"
 }
