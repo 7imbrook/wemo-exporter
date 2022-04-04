@@ -1,0 +1,15 @@
+{
+    "Node": "local-mac",
+    "Address": "192.168.1.143",
+    "NodeMeta": {
+        "external-node": "true"
+    },
+    "Service": {
+        "ID": "local-mbp",
+        "Service": "wemo-exporter",
+        "Port": 3001,
+        "Tags": [
+            "metrics"
+        ]
+    }
+}
