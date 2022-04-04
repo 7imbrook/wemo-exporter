@@ -1,0 +1,7 @@
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+    <s:Body>
+        <u:GetInsightParamsResponse xmlns:u="urn:Belkin:service:metainfo:1">
+            <InsightParams>8|1648943256|0|0|63636|99560|294|0|0|51821989.000000|8000</InsightParams>
+        </u:GetInsightParamsResponse>
+    </s:Body>
+</s:Envelope>
