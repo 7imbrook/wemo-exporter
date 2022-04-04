@@ -22,7 +22,7 @@ jobs:
         os:
           - ubuntu-latest
         include:
-          - os: maxos-latest
+          - os: macos-latest
             target: x86_64-apple-darwin
     runs-on: ${{ matrix.os }}
     steps:
