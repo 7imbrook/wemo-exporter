@@ -3,7 +3,7 @@ mod types;
 use std::io::Read;
 use hyper::{body::Buf, Body, Client, Method, Request};
 
-use crate::types::get_power_body;
+use crate::types::{get_power_body, read_insight_response};
 
 #[derive(Debug)]
 enum WemoError {}
@@ -29,8 +29,10 @@ async fn query_power_draw() -> Result<(), WemoError> {
     let mut reader = body.reader();
 
     let mut buffer = String::new();
+    // Can probably skip this step and just use the reader
     reader.read_to_string(&mut buffer).unwrap();
-    println!("{}", buffer);
+    read_insight_response(&buffer);
+
 
     Ok(())
 }
