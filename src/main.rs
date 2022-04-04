@@ -1,7 +1,8 @@
 mod types;
 
 use hyper::{body::Buf, Body, Client, Method, Request};
-use std::io::Read;
+use tokio::time::sleep;
+use std::{io::Read, time::Duration};
 
 use crate::types::{get_power_body, read_insight_response};
 
@@ -17,7 +18,7 @@ struct Insight {
     instant_power: f32,
 }
 
-async fn query_power_draw() -> Result<(), WemoError> {
+async fn query_power_draw() -> Result<Insight, WemoError> {
     let request_power = Request::builder()
         .method(Method::POST)
         .uri("http://10.1.229.62:49153/upnp/control/insight1")
@@ -46,7 +47,6 @@ async fn query_power_draw() -> Result<(), WemoError> {
 
     let insights = read_insight_response(&buffer);
 
-    println!("{}", insights);
     // One line parsing is the way to go right?
     let insight = match insights
         .split("|")
@@ -65,13 +65,14 @@ async fn query_power_draw() -> Result<(), WemoError> {
         }
         _ => panic!("Oh no"),
     };
-
-    dbg!(insight);
-
-    Ok(())
+    Ok(insight)
 }
 
 #[tokio::main]
 async fn main() {
-    query_power_draw().await.unwrap();
+    loop {
+        let insight = query_power_draw().await.unwrap();
+        println!("{} mW", insight.instant_power);
+        sleep(Duration::from_secs(1)).await;
+    }
 }
