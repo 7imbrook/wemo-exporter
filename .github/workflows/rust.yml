@@ -1,17 +1,9 @@
-name: Rust Build
-
+name: Rust Build Release
 on:
-  workflow_dispatch:
   push:
     branches: [ master ]
 
 jobs:
-  release:
-    if: github.event_name == 'workflow_dispatch'
-    needs: [build]
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo building release
   build:
     strategy:
       fail-fast: false
@@ -37,3 +29,10 @@ jobs:
           use-cross: true
           command: build
           args: --target ${{ matrix.target }} --release
+      - name: Archive
+        run: zip wemo-exporter-${{ matrix.target }}.zip -j ./target/release/wemo-exporter
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.target }}
+          path: wemo-exporter-${{ matrix.target }}.zip
