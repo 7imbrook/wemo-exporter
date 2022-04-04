@@ -6,15 +6,23 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: 
+          - x86_64-apple-darwin
+          - x86_64-unknown-linux-gnu	
+          - aarch64-unknown-linux-gnu
+        os:
+          - ubuntu-latest
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          target: armv7-unknown-linux-gnueabihf
+          target: ${{ matrix.target }}
       - uses: actions-rs/cargo@v1
         with:
           use-cross: true
           command: build
-          args: --target armv7-unknown-linux-gnueabihf --release
+          args: --target ${{ matrix.target }} --release
