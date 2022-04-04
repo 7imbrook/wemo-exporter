@@ -6,6 +6,12 @@ on:
     branches: [ master ]
 
 jobs:
+  release:
+    if: github.event_name == 'workflow_dispatch'
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo building release
   build:
     strategy:
       fail-fast: false
@@ -30,4 +36,4 @@ jobs:
         with:
           use-cross: true
           command: build
-          args: --target ${{ matrix.target }}
+          args: --target ${{ matrix.target }} --release
