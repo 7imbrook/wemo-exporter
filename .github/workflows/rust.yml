@@ -30,7 +30,7 @@ jobs:
           command: build
           args: --target ${{ matrix.target }} --release
       - name: Archive
-        run: zip wemo-exporter-${{ matrix.target }}.zip -j ./target/release/wemo-exporter
+        run: zip wemo-exporter-${{ matrix.target }}.zip -j ./target/${{ matrix.target }}/release/wemo-exporter
       - name: Upload
         uses: actions/upload-artifact@v3
         with:
