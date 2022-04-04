@@ -34,5 +34,13 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.target }}
+          name: wemo-exporter 
           path: wemo-exporter-${{ matrix.target }}.zip
+  release:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: wemo-exporter
+      - run: ls -las
