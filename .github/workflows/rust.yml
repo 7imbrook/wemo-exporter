@@ -1,6 +1,7 @@
 name: Rust Build
 
 on:
+  workflow_dispatch:
   push:
     branches: [ master ]
 
@@ -29,4 +30,4 @@ jobs:
         with:
           use-cross: true
           command: build
-          args: --target ${{ matrix.target }} --release
+          args: --target ${{ matrix.target }}
