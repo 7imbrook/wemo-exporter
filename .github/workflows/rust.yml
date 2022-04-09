@@ -18,17 +18,17 @@ jobs:
       - uses: octokit/request-action@v2.x
         id: get_latest_release
         with:
-          route: GET /repos/:repository/releases/devrelease
+          route: GET /repos/:repository/releases
           repository: ${{ github.repository }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: get upload url
+      - name: Get upload url for release tagged dev
         id: get_upload_url
         run: |
-          url=$(echo "$response" | jq -r '.upload_url')
+          url=$(echo "$response" | jq -r '.[] | select(.tag_name == "dev") | .upload_url')
           echo "::set-output name=url::$url"
         env: 
-          response:  ${{ steps.get_latest_release.outputs.data }}
+          response: ${{ steps.get_latest_release.outputs.data }}
   build:
     needs: [devrelease]
     strategy:
