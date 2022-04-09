@@ -35,7 +35,7 @@ jobs:
           route: GET /repos/7imbrook/wemo-exporter/releases/tags/dev
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: echo ${{steps.dev_release.outputs.data}} | jq
+      - run: echo '${{steps.dev_release.outputs.data}}' | jq '.assets'
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
