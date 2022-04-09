@@ -1,15 +1,21 @@
 mod types;
 
-use hyper::{body::Buf, Body, Client, Method, Request, service::{make_service_fn, service_fn}, Server, Response};
-use tokio::time::sleep;
-use std::{io::Read, time::Duration, net::SocketAddr, convert::Infallible};
+use hyper::{
+    body::Buf,
+    service::{make_service_fn, service_fn},
+    Body, Client, Method, Request, Response, Server, Uri,
+};
+use std::{convert::Infallible, io::Read, net::SocketAddr};
 
 use crate::types::{get_power_body, read_insight_response};
 
 #[derive(Debug)]
-enum WemoError {}
+enum WemoError {
+    FAIL,
+}
 
 #[derive(Debug)]
+#[allow(dead_code)]
 struct Insight {
     state: bool,
     on_since: f32,
@@ -18,20 +24,36 @@ struct Insight {
     instant_power: f32,
 }
 
-async fn query_power_draw() -> Result<Insight, WemoError> {
-    let request_power = Request::builder()
+fn build_request() -> Request<Body> {
+    let uri = Uri::builder()
+        .scheme("http")
+        .authority("10.1.229.7:49154")
+        .path_and_query("/upnp/control/insight1")
+        .build()
+        .unwrap();
+
+    return Request::builder()
         .method(Method::POST)
-        .uri("http://10.1.229.62:49153/upnp/control/insight1")
+        .uri(uri)
         .header(
             "SOAPACTION",
             "\"urn:Belkin:service:insight:1#GetInsightParams\"",
         )
         .header("Content-Type", "text/xml")
         .body(Body::from(get_power_body()))
-        .expect("Build");
+        .unwrap();
+}
 
-    let client = Client::new();
-    let res = client.request(request_power).await.unwrap();
+async fn query_power_draw() -> Result<Insight, WemoError> {
+    let client = Client::builder().build_http();
+
+    println!("Making a request to wemo");
+    let call = client.request(build_request()).await;
+    if let Err(_) = call {
+        return Err(WemoError::FAIL);
+    }
+    let res = call.unwrap();
+
     let status = res.status();
 
     let body = hyper::body::aggregate(res).await.unwrap();
@@ -42,7 +64,7 @@ async fn query_power_draw() -> Result<Insight, WemoError> {
     reader.read_to_string(&mut buffer).unwrap();
 
     if !status.is_success() {
-        panic!("{}", buffer);
+        return Err(WemoError::FAIL);
     }
 
     let insights = read_insight_response(&buffer);
@@ -76,14 +98,18 @@ async fn metrics(_req: Request<Body>) -> Result<Response<Body>, Infallible> {
 
 #[tokio::main]
 async fn main() {
-    let addr = SocketAddr::from(([0,0,0,0], 3001));
+    if let Ok(insight) = query_power_draw().await {
+        let metric = format!("wemo_power_instant_mw {}", insight.instant_power);
+        println!("{}", metric);
+    } else {
+        println!("WARN: Failed to query wemo on startup");
+    }
 
-    let service = make_service_fn(|_conn| async {
-        Ok::<_, Infallible>(service_fn(metrics))
-    });
-
+    // Metrics server!
+    let addr = SocketAddr::from(([0, 0, 0, 0], 3001));
+    let service = make_service_fn(|_conn| async { Ok::<_, Infallible>(service_fn(metrics)) });
     let server = Server::bind(&addr).serve(service);
-    
+
     // Run this server for... forever!
     if let Err(e) = server.await {
         eprintln!("server error: {}", e);
