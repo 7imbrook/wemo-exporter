@@ -5,6 +5,7 @@ on:
 
 jobs:
   move:
+    name: Move dev tag to current sha
     runs-on: ubuntu-latest
     outputs:
       upload: ${{steps.get_upload_url.outputs.url}}
@@ -39,6 +40,7 @@ jobs:
       - name: Populate Release Info 
         id: info
         run: echo "::set-output upload_url=$(cat ./release.json | jq '.upload_url' )"
+      - run: echo ${{ steps.info.outputs.upload_url }}
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
