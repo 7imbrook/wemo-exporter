@@ -5,7 +5,7 @@ use yaserde::ser::to_string_with_config;
 
 #[derive(Debug, Clone)]
 pub struct WemoInsightSwitch {
-    target: String,
+    pub target: String,
 }
 
 impl WemoInsightSwitch {

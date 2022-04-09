@@ -1,17 +1,58 @@
 mod config;
-mod types;
 mod insights;
+mod types;
 
+use crate::insights::query_power_draw;
 use clap::Parser;
 use hyper::{
     service::{make_service_fn, service_fn},
     Body, Request, Response, Server,
 };
-use crate::insights::query_power_draw;
-use std::{convert::Infallible, net::SocketAddr};
+use insights::Insight;
+use std::{convert::Infallible, fmt::Display, net::SocketAddr};
+
+#[derive(Debug)]
+struct Metric<'a> {
+    name: &'a str,
+    value: String,
+
+    switch: &'a Insight,
+}
+
+impl Display for Metric<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let labels = format!("{{test=\"local\", target=\"{}\"}}", self.switch.target);
+
+        write!(f, "{}{} {}", self.name, labels, self.value)
+    }
+}
+
+impl Insight {
+    fn metrics(&self) -> Vec<Metric> {
+        vec![
+            Metric {
+                name: "wemo_instant_power",
+                value: self.instant_power.to_string(),
+                switch: self,
+            },
+            Metric {
+                name: "wemo_power_state",
+                value: format!("{}", self.state as u8),
+                switch: self,
+            },
+        ]
+    }
+}
 
 async fn prometheus() -> Body {
-    Body::from("")
+    let inights = query_power_draw()
+        .await
+        .iter()
+        .map(|i| i.metrics())
+        .flatten()
+        .fold(String::new(), |a, b| format!("{}\n{}", a, b));
+
+    Body::from(inights)
 }
 
 async fn metrics(req: Request<Body>) -> Result<Response<Body>, Infallible> {
@@ -41,7 +82,6 @@ async fn validate() {
     // };
 
     query_power_draw().await;
-
 }
 
 // Probably move all above out of here

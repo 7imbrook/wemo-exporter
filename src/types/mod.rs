@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 
-use yaserde::{de::from_str, ser::to_string_with_config};
 use yaserde_derive::{YaDeserialize, YaSerialize};
 
 #[derive(Default, Debug, YaSerialize, YaDeserialize)]
@@ -58,44 +57,5 @@ pub mod response {
     pub struct GetInsightParamsResponse {
         #[yaserde(rename = "InsightParams")]
         pub insight: String,
-    }
-}
-
-pub fn get_power_body() -> String {
-    let yaserde_cfg = yaserde::ser::Config {
-        perform_indent: true,
-        ..Default::default()
-    };
-    let body = Envelope {
-        body: BodyParams::GetInsightParams(InsightParams { child: None }),
-    };
-    return to_string_with_config(&body, &yaserde_cfg).unwrap();
-}
-
-pub fn read_insight_response(buffer: &str) -> String {
-    let parsed: response::Envelope = from_str(&buffer).unwrap();
-    String::from(parsed.body.response.insight)
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::types::{get_power_body, read_insight_response};
-    use std::fs;
-
-    #[test]
-    fn test_serialize() {
-        assert_eq!(
-            fs::read_to_string("tests/data/get_power.xml").unwrap(),
-            get_power_body()
-        );
-    }
-
-    #[test]
-    fn test_deserialize() {
-        let buffer = fs::read_to_string("tests/data/get_power_response.xml").unwrap();
-        assert_eq!(
-            read_insight_response(&buffer),
-            "8|1648943256|0|0|63636|99560|294|0|0|51821989.000000|8000"
-        );
     }
 }

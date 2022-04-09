@@ -21,11 +21,12 @@ pub enum WemoError {
 
 #[derive(Debug)]
 pub struct Insight {
-    state: bool,
+    pub target: String,
+    pub state: bool,
     on_since: f32,
     on_for: f32,
     today_on_for: f32,
-    instant_power: f32,
+    pub instant_power: f32,
 }
 
 trait Connector {
@@ -50,7 +51,7 @@ async fn process_response(switch: &WemoInsightSwitch) -> Result<Option<Insight>,
 }
 
 async fn parse_body(
-    _insight: &WemoInsightSwitch,
+    insight: &WemoInsightSwitch,
     response: Response<Body>,
 ) -> Result<Option<Insight>, WemoError> {
     let body = hyper::body::aggregate(response).await.unwrap();
@@ -69,6 +70,7 @@ async fn parse_body(
     {
         &[power_state, on_since, on_for, today_on_for, _e, _f, _g, instant_power, _i, _j, _k] => {
             Insight {
+                target: insight.target.to_owned(),
                 state: power_state > 0.0,
                 on_for,
                 on_since,
@@ -82,7 +84,7 @@ async fn parse_body(
     Ok(Some(insight))
 }
 
-pub async fn query_power_draw() {
+pub async fn query_power_draw() -> Vec<Insight> {
     let config = config::load_config().unwrap();
     let requests = config
         .targets
@@ -91,46 +93,13 @@ pub async fn query_power_draw() {
         .collect::<Vec<WemoInsightSwitch>>();
 
     let responses = join_all(requests.iter().map(process_response)).await;
-    responses.iter().for_each(|r| match r {
-        Ok(e) => println!("{:?}", e),
-        _ => (),
-    })
+    let mut success: Vec<Insight> = Vec::new();
+    for res in responses {
+        if let Ok(i) = res {
+            if let Some(insight) = i {
+                success.push(insight);
+            }
+        }
+    }
+    success
 }
-
-// async fn next() {
-//     let call = client.request(request).await;
-//     // if let Err(_) = call {
-//     //     return Err(WemoError::FAIL);
-//     // }
-//     let res = call.unwrap();
-
-//     let status = res.status();
-
-//     let body = hyper::body::aggregate(res).await.unwrap();
-//     let mut reader = body.reader();
-
-//     let mut buffer = String::new();
-//     // Can probably skip this step and just use the reader
-//     reader.read_to_string(&mut buffer).unwrap();
-
-//     let insights = read_insight_response(&buffer);
-
-//     // One line parsing is the way to go right?
-//     let insight = match insights
-//         .split("|")
-//         .map(|v| v.parse().unwrap())
-//         .collect::<Vec<f32>>()
-//         .as_slice()
-//     {
-//         &[power_state, on_since, on_for, today_on_for, _e, _f, _g, instant_power, _i, _j, _k] => {
-//             Insight {
-//                 state: power_state > 0.0,
-//                 on_for,
-//                 on_since,
-//                 today_on_for,
-//                 instant_power,
-//             }
-//         }
-//         _ => panic!("Oh no"),
-//     };
-// }
