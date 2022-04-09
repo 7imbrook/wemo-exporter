@@ -35,7 +35,10 @@ jobs:
           route: GET /repos/7imbrook/wemo-exporter/releases/tags/dev
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: echo '${{steps.dev_release.outputs.data}}' > release.json
+      - run: echo '${{steps.dev_release.outputs.data}}' > ./release.json
+      - name: Get Release
+        id: dev
+        run: echo "::set-ouput upload_url=$(cat ./release.json | jq '.upload_url' )"
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
@@ -49,9 +52,6 @@ jobs:
           args: --target ${{ matrix.target }} --release
       - name: Archive
         run: zip wemo-exporter-${{ matrix.target }}.zip -j ./target/${{ matrix.target }}/release/wemo-exporter
-      - name: Get Release
-        id: dev
-        run: echo "::set-ouput upload_url=$(cat release.json | jq '.upload_url' )"
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
