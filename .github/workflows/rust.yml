@@ -36,9 +36,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: echo '${{steps.dev_release.outputs.data}}' > ./release.json
-      - name: Get Release
-        id: dev
-        run: echo "::set-ouput upload_url=$(cat ./release.json | jq '.upload_url' )"
+      - name: Populate Release Info 
+        id: info
+        run: echo "::set-output upload_url=$(cat ./release.json | jq '.upload_url' )"
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
@@ -57,7 +57,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{steps.dev.outputs.upload_url}}
+          upload_url: ${{steps.info.outputs.upload_url}}
           asset_path: ./wemo-exporter-${{ matrix.target }}.zip
           asset_name: wemo-exporter-${{ matrix.target }}.zip
           asset_content_type: application/zip
