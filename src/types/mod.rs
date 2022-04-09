@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use yaserde::{de::from_str, ser::to_string_with_config};
 use yaserde_derive::{YaDeserialize, YaSerialize};
 
