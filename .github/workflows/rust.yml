@@ -15,7 +15,7 @@ jobs:
           tag_name: dev 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: octokit/request-action@v2
+      - uses: octokit/request-action@v2.x
         id: get_latest_release
         with:
           route: GET /repos/:repository/releases/devrelease
