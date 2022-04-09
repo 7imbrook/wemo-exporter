@@ -37,10 +37,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: echo '${{steps.dev_release.outputs.data}}' > ./release.json
+      - run: cat ./release.json
       - name: Populate Release Info 
         id: info
         run: echo "::set-output upload_url=$(cat ./release.json | jq '.upload_url' )"
-      - run: echo ${{ steps.info.outputs }}
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
