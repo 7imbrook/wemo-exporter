@@ -8,8 +8,8 @@ pub struct Configuration {
 
 pub fn load_config() -> Result<Configuration, &'static str> {
     Config::builder()
-        .add_source(File::with_name("settings"))
-        .add_source(File::with_name("local/settings"))
+        .add_source(File::with_name("settings").required(false))
+        .add_source(File::with_name("local/settings").required(false))
         .build()
         .map_err(|_| "Could not locate config")
         .and_then(|c| {

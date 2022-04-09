@@ -7,6 +7,7 @@ use hyper::{
     Body, Client, Method, Request, Response, Server, Uri,
 };
 use std::{convert::Infallible, io::Read, net::SocketAddr};
+use clap::Parser;
 
 use crate::types::{get_power_body, read_insight_response};
 
@@ -102,17 +103,7 @@ async fn metrics(_req: Request<Body>) -> Result<Response<Body>, Infallible> {
     Ok(Response::new(Body::from(metric)))
 }
 
-#[tokio::main]
-async fn main() {
-    config::load_config().unwrap();
-    
-    if let Ok(insight) = query_power_draw().await {
-        let metric = format!("wemo_power_instant_mw {}", insight.instant_power);
-        println!("{}", metric);
-    } else {
-        println!("WARN: Failed to query wemo on startup");
-    }
-
+async fn run_server() {
     // Metrics server!
     let addr = SocketAddr::from(([0, 0, 0, 0], 3001));
     let service = make_service_fn(|_conn| async { Ok::<_, Infallible>(service_fn(metrics)) });
@@ -121,5 +112,36 @@ async fn main() {
     // Run this server for... forever!
     if let Err(e) = server.await {
         eprintln!("server error: {}", e);
+    }
+}
+
+async fn validate() {
+    match config::load_config() {
+        Ok(config) => println!("{:?}", config),
+        Err(e) => println!("Failed: {}", e)
+    };
+}
+
+// Probably move all above out of here
+
+/// Wemo-exporter a prometheus exporter for wemo insight switches
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+struct Args {
+    /// Run as server
+    #[clap(short, long)]
+    server: bool,
+    
+    /// Validate config
+    #[clap(short, long)]
+    validate: bool,
+}
+
+#[tokio::main]
+async fn main() {
+    match Args::parse() {
+        Args {server: true, .. } => run_server().await,
+        Args {validate: true, .. } => validate().await,
+        _ => {},
     }
 }
