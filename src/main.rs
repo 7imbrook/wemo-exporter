@@ -1,4 +1,5 @@
 mod types;
+mod config;
 
 use hyper::{
     body::Buf,
@@ -24,10 +25,10 @@ struct Insight {
     instant_power: f32,
 }
 
-fn build_request() -> Request<Body> {
+fn build_request(target: &str) -> Request<Body> {
     let uri = Uri::builder()
         .scheme("http")
-        .authority("10.1.229.7:49154")
+        .authority(target)
         .path_and_query("/upnp/control/insight1")
         .build()
         .unwrap();
@@ -47,8 +48,13 @@ fn build_request() -> Request<Body> {
 async fn query_power_draw() -> Result<Insight, WemoError> {
     let client = Client::builder().build_http();
 
-    println!("Making a request to wemo");
-    let call = client.request(build_request()).await;
+    let config = config::load_config().unwrap();
+
+    let target = config.targets.first().unwrap();
+
+    let request = build_request(&target);
+
+    let call = client.request(request).await;
     if let Err(_) = call {
         return Err(WemoError::FAIL);
     }
@@ -98,6 +104,8 @@ async fn metrics(_req: Request<Body>) -> Result<Response<Body>, Infallible> {
 
 #[tokio::main]
 async fn main() {
+    config::load_config().unwrap();
+    
     if let Ok(insight) = query_power_draw().await {
         let metric = format!("wemo_power_instant_mw {}", insight.instant_power);
         println!("{}", metric);
