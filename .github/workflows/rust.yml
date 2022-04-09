@@ -40,7 +40,7 @@ jobs:
       - name: Populate Release Info 
         id: info
         run: echo "::set-output upload_url=$(cat ./release.json | jq '.upload_url' )"
-      - run: echo ${{ steps.info.outputs.upload_url }}
+      - run: echo ${{ steps.info.outputs }}
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
