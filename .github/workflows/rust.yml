@@ -9,6 +9,7 @@ jobs:
     outputs:
       upload: ${{steps.get_upload_url.outputs.url}}
     steps:
+      - run: hub api /repos/7imbrook/wemo-exporter/releases/tags/dev | jq '.assets[].url' -r | xargs -n1 hub api -X DELETE
       - name: Move Tag
         uses: richardsimko/update-tag@v1
         with:
@@ -18,14 +19,14 @@ jobs:
       - uses: octokit/request-action@v2.x
         id: get_latest_release
         with:
-          route: GET /repos/:repository/releases
+          route: GET /repos/:repository/releases/tags/dev
           repository: ${{ github.repository }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Get upload url for release tagged dev
         id: get_upload_url
         run: |
-          url=$(echo "$response" | jq -r '.[] | select(.tag_name == "dev") | .upload_url')
+          url=$(echo "$response" | jq -r '.upload_url')
           echo "::set-output name=url::$url"
         env: 
           response: ${{ steps.get_latest_release.outputs.data }}
