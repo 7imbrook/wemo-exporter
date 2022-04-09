@@ -9,13 +9,13 @@ use yaserde_derive::{YaDeserialize, YaSerialize};
     namespace = "s: http://schemas.xmlsoap.org/soap/envelope/"
     namespace = "u: urn:Belkin:service:insight:1"
 )]
-struct Envelope {
+pub struct Envelope {
     #[yaserde(rename = "Body", prefix = "s", default_namespace = "s")]
-    body: BodyParams,
+    pub body: BodyParams,
 }
 
 #[derive(Debug, YaSerialize, YaDeserialize)]
-enum BodyParams {
+pub enum BodyParams {
     #[yaserde(prefix = "u")]
     GetInsightParams(InsightParams),
     #[yaserde(prefix = "u")]
@@ -29,12 +29,12 @@ impl Default for BodyParams {
 }
 
 #[derive(Default, Debug, YaSerialize, YaDeserialize)]
-struct InsightParams {
+pub struct InsightParams {
     #[yaserde(child)]
-    child: Option<String>,
+    pub child: Option<String>,
 }
 
-mod response {
+pub mod response {
     use yaserde_derive::{YaDeserialize, YaSerialize};
 
     #[derive(Default, Debug, YaDeserialize, YaSerialize)]
@@ -59,7 +59,6 @@ mod response {
         #[yaserde(rename = "InsightParams")]
         pub insight: String,
     }
-
 }
 
 pub fn get_power_body() -> String {
@@ -80,8 +79,8 @@ pub fn read_insight_response(buffer: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
     use crate::types::{get_power_body, read_insight_response};
+    use std::fs;
 
     #[test]
     fn test_serialize() {
@@ -90,7 +89,7 @@ mod tests {
             get_power_body()
         );
     }
-    
+
     #[test]
     fn test_deserialize() {
         let buffer = fs::read_to_string("tests/data/get_power_response.xml").unwrap();

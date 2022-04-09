@@ -5,17 +5,18 @@ mod wemo;
 use std::time::Duration;
 
 use futures::future::join_all;
-use hyper::{client::HttpConnector, Client};
+use hyper::{body::Buf, client::HttpConnector, Body, Client, Response};
 use hyper_timeout::TimeoutConnector;
 
-use crate::config;
+use crate::{config, types::response};
 
 use self::wemo::WemoInsightSwitch;
 
 #[derive(Debug)]
 pub enum WemoError {
     FailUnknown,
-    CONNECTION,
+    Connection,
+    Unimplemented,
 }
 
 #[derive(Debug)]
@@ -41,16 +42,47 @@ impl Connector for Client<TimeoutConnector<HttpConnector>> {
     }
 }
 
-async fn process_response(switch: &WemoInsightSwitch) -> Result<String, WemoError> {
+async fn process_response(switch: &WemoInsightSwitch) -> Result<Option<Insight>, WemoError> {
     match Client::connect().request(switch.clone().into()).await {
-        Ok(res) if res.status().is_success() => Ok(format!("OK {:?}", res)),
-        Ok(res) => Ok(format!("Error {:?} {:?}", switch, res)),
-        Err(_e) => Err(WemoError::CONNECTION),
+        Ok(res) => parse_body(switch, res).await,
+        Err(_e) => Err(WemoError::Connection),
     }
 }
 
+async fn parse_body(
+    _insight: &WemoInsightSwitch,
+    response: Response<Body>,
+) -> Result<Option<Insight>, WemoError> {
+    let body = hyper::body::aggregate(response).await.unwrap();
+    let mut reader = body.reader();
+    let parsed: response::Envelope = yaserde::de::from_reader(&mut reader).unwrap();
+
+    // One line parsing is the way to go right?
+    let insight = match parsed
+        .body
+        .response
+        .insight
+        .split("|")
+        .map(|v| v.parse().unwrap())
+        .collect::<Vec<f32>>()
+        .as_slice()
+    {
+        &[power_state, on_since, on_for, today_on_for, _e, _f, _g, instant_power, _i, _j, _k] => {
+            Insight {
+                state: power_state > 0.0,
+                on_for,
+                on_since,
+                today_on_for,
+                instant_power,
+            }
+        }
+        _ => panic!("Oh no"),
+    };
+
+    Ok(Some(insight))
+}
+
 pub async fn query_power_draw() {
-    println!("Starting");
     let config = config::load_config().unwrap();
     let requests = config
         .targets
@@ -59,7 +91,10 @@ pub async fn query_power_draw() {
         .collect::<Vec<WemoInsightSwitch>>();
 
     let responses = join_all(requests.iter().map(process_response)).await;
-    println!("{:?}", responses);
+    responses.iter().for_each(|r| match r {
+        Ok(e) => println!("{:?}", e),
+        _ => (),
+    })
 }
 
 // async fn next() {
